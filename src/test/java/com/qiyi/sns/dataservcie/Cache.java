@@ -4,10 +4,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
+import java.util.concurrent.Callable;
 
 import org.junit.Test;
 
@@ -139,16 +139,38 @@ public class Cache {
 
     }
 
+    class IllegalKey {
+        private final int member;
+
+        public IllegalKey(int member) {
+            this.member = member;
+        }
+
+        @Override
+        public int hashCode() {return Objects.hash(member);}
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {return true;}
+            if (obj == null || getClass() != obj.getClass()) {return false;}
+            final IllegalKey other = (IllegalKey) obj;
+            return Objects.equals(this.member, other.member);
+        }
+    }
+
     @Test
     public void localCache() {
         Key1 key1 = new Key1(1);
         Value1 value1 = new Value1("1");
 
         Key2 key2 = new Key2("1");
-        Value2 value2 = new Value2(2);
+        final Value2 value2 = new Value2(2);
 
+        IllegalKey illegalKey = new IllegalKey(1);
+
+        CachePolicy policy = new DefaultCachePolicy();
         //maximumWeight 1000byte
-        LocalCache cache = new LocalCache(2000);
+        LocalCache cache = new LocalCache(policy);
 
         //basic set , get and delete
         cache.put(key1, value1);
@@ -156,27 +178,42 @@ public class Cache {
         assertTrue(cache.get(key1, Value1.class).isPresent());
         assertThat(cache.get(key1, Value1.class).get(), is(value1));
 
+        //illegalKey can't compile
+        //cache.put(illegalKey, value1);
+
         //object equals and hashcode equals will get the same value (CacheKey must implements hashcode and equals method)
         assertThat(cache.get(new Key1(1), Value1.class).get(), is(value1));
 
         //object not equals and hashcode equals will not be treated as same key
         assertFalse(cache.get(new Key3(1), Value1.class).isPresent());
 
+        //test delete
         cache.delete(key1);
-        assertFalse(cache.get(new Key1(1),Value1.class).isPresent());
-        assertTrue(cache.get(new Key2("1"),Value2.class).isPresent());
-
+        assertFalse(cache.get(new Key1(1), Value1.class).isPresent());
+        assertTrue(cache.get(new Key2("1"), Value2.class).isPresent());
 
         //String key test
-        cache.put(CacheKeyString.of("key1"),value1);
-        assertTrue(cache.get(CacheKeyString.of("key1"),Value1.class).isPresent());
-        assertEquals(cache.get(CacheKeyString.of("key1"),Value1.class).get(),value1);
+        cache.put(PermanentStringKey.of("key1"), value1);
+        assertTrue(cache.get(PermanentStringKey.of("key1"), Value1.class).isPresent());
+        assertEquals(cache.get(PermanentStringKey.of("key1"), Value1.class).get(), value1);
 
-        Optional<Object> rawObject=cache.get(CacheKeyString.of("key1"));
-        assertEquals(rawObject.get(),value1);
-        assertTrue(rawObject.get() instanceof Value1);
+        //ten minutes expiry cache test
+        cache.put(TenMinStringKey.of("key1"), value1);
+        assertTrue(cache.get(TenMinStringKey.of("key1"), Value1.class).isPresent());
 
-
+        //test check and set cache
+        assertTrue(cache.get(key2, new Callable<Value2>() {
+            @Override
+            public Value2 call() throws Exception {
+                return value2;
+            }
+        }, Value2.class).isPresent());
+        assertEquals(value2, cache.get(key2, new Callable<Value2>() {
+            @Override
+            public Value2 call() throws Exception {
+                return value2;
+            }
+        }, Value2.class).get());
 
     }
 

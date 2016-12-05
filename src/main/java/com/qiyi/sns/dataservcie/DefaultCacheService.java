@@ -1,24 +1,31 @@
 package com.qiyi.sns.dataservcie;
 
+import static com.qiyi.sns.dataservcie.dao.ExpiryCacheType.PERMANENT;
+
 import org.joda.time.Duration;
+
+import com.qiyi.sns.dataservcie.dao.ExpiryCacheType;
 
 /**
  * Created by wangjunfei on 12/2/16.
  */
 public class DefaultCacheService implements CacheService {
-    @Override
-    public <K, V> boolean set(K key, V value) {
-        return false;
+    private final CachePolicy policy;
+    private final LocalCache localCache;
+
+    public DefaultCacheService(CachePolicy policy, LocalCache localCache) {
+        this.policy = policy;
+        this.localCache = localCache;
     }
 
     @Override
-    public <K, V> boolean set(K key, V value, Duration expiry) {
-        return false;
+    public <K extends CacheKey, V extends CacheValue> void set(K key, V value) {
+
     }
 
     @Override
-    public <K, V> V delete(K k) {
-        return null;
+    public <K extends CacheKey> void delete(K k) {
+
     }
 
 //    @Override

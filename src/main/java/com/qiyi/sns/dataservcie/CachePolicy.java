@@ -1,15 +1,19 @@
 package com.qiyi.sns.dataservcie;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.qiyi.sns.dataservcie.dao.ExpiryCacheType;
 
 /**
  * Created by wangjunfei on 12/2/16.
  */
 public interface CachePolicy {
-    <T> boolean allowLocal(T classT);
+    boolean allowLocal(Class classType);
 
-    <T> int getLocalCacheWeight(T classT);
+    /**
+     * Cache过期政策
+     * @param classType
+     * @return 默认的都是永久类型的cache
+     */
+    ExpiryCacheType cacheTypeOf(Class classType);
 
-    @VisibleForTesting
-    <T> void addAllowType(Class<T> classT, int weight);
 }

@@ -1,5 +1,7 @@
 package com.qiyi.sns.dataservcie;
 
+import com.qiyi.sns.dataservcie.dao.ExpiryCacheType;
+
 /**
  * Created by wangjunfei on 12/2/16.
  * cache key必须要实现该接口,或者是String类型的key
